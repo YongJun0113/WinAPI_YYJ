@@ -36,9 +36,9 @@ struct ImageCutData
 	float SizeX = 0.0f;
 	float SizeY = 0.0f;
 
-	float4 GetStartPos()
+	float4 GetStartPos() 
 	{
-		return { StartX, StartY };
+		return {StartX, StartY};
 	}
 
 	float4 GetScale()
@@ -82,7 +82,7 @@ public:
 		return float4{ static_cast<float>(Info.bmWidth), static_cast<float>(Info.bmHeight) };
 	}
 
-	bool IsImageCutting()
+	bool IsImageCutting() 
 	{
 		return IsCut;
 	}
@@ -103,7 +103,7 @@ public:
 		{
 			return false;
 		}
-
+		
 		return true;
 	}
 
@@ -134,6 +134,10 @@ public:
 
 	// 디폴트 인자는 선언에서만 가능합니다.
 	void TransCopy(const GameEngineImage* _OtherImage, int _CutIndex, float4 _CopyCenterPos, float4 _CopySize, int _Color = RGB(255, 0, 255));
+
+	void AlphaCopy(const GameEngineImage* _OtherImage, float4 _CopyCenterPos, float4 _CopySize, float4 _OtherImagePos, float4 _OtherImageSize, int _Alpha);
+	// 디폴트 인자는 선언에서만 가능합니다.
+	void AlphaCopy(const GameEngineImage* _OtherImage, int _CutIndex, float4 _CopyCenterPos, float4 _CopySize, int _Color);
 
 
 	DWORD GetPixelColor(float4 _Pos, DWORD _OutColor);

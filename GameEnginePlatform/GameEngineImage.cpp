@@ -6,11 +6,11 @@
 // 다른 lib를 사용하겠다.
 #pragma comment(lib, "msimg32.lib")
 
-GameEngineImage::GameEngineImage()
+GameEngineImage::GameEngineImage() 
 {
 }
 
-GameEngineImage::~GameEngineImage()
+GameEngineImage::~GameEngineImage() 
 {
 	if (nullptr != BitMap)
 	{
@@ -92,7 +92,7 @@ bool GameEngineImage::ImageLoad(const GameEnginePath& _Path)
 
 #define TEST(Value) Value
 
-bool GameEngineImage::ImageLoad(const std::string_view& _Path)
+bool GameEngineImage::ImageLoad(const std::string_view& _Path) 
 {
 	//HDC ImageDC;
 	//HBITMAP BitMap;
@@ -109,7 +109,7 @@ bool GameEngineImage::ImageLoad(const std::string_view& _Path)
 	if (nullptr == BitMap)
 	{
 		std::string Path = _Path.data();
-		MsgAssert(Path + " 이미지 로드에 실패했습니다.");
+		MsgAssert(Path + " 이미지 로드에 실패했습니다." );
 		return false;
 	}
 
@@ -166,7 +166,7 @@ void GameEngineImage::TransCopy(const GameEngineImage* _OtherImage, int _CutInde
 
 	ImageCutData Data = _OtherImage->GetCutData(_CutIndex);
 
-	TransCopy(_OtherImage, _CopyCenterPos, _CopySize, Data.GetStartPos(), Data.GetScale(), _Color);
+	TransCopy(_OtherImage,  _CopyCenterPos, _CopySize, Data.GetStartPos(), Data.GetScale(), _Color);
 }
 
 void GameEngineImage::TransCopy(const GameEngineImage* _OtherImage, float4 _CopyCenterPos, float4 _CopySize, float4 _OtherImagePos, float4 _OtherImageSize, int _Color)
@@ -184,6 +184,43 @@ void GameEngineImage::TransCopy(const GameEngineImage* _OtherImage, float4 _Copy
 		_OtherImageSize.iy(),
 		_Color);
 }
+
+void GameEngineImage::AlphaCopy(const GameEngineImage* _OtherImage, int _CutIndex, float4 _CopyCenterPos, float4 _CopySize, int _Color)
+{
+	if (false == _OtherImage->IsCut)
+	{
+		MsgAssert(" 잘리지 않은 이미지로 cut출력 함수를 사용하려고 했습니다.");
+		return;
+	}
+
+	ImageCutData Data = _OtherImage->GetCutData(_CutIndex);
+
+	AlphaCopy(_OtherImage, _CopyCenterPos, _CopySize, Data.GetStartPos(), Data.GetScale(), _Color);
+}
+
+void GameEngineImage::AlphaCopy(const GameEngineImage* _OtherImage, float4 _CopyCenterPos, float4 _CopySize, float4 _OtherImagePos, float4 _OtherImageSize, int _Alpha)
+{
+	BLENDFUNCTION BF;
+
+	BF.BlendOp = AC_SRC_OVER;
+	BF.BlendFlags = 0;
+	BF.SourceConstantAlpha = _Alpha;
+	BF.AlphaFormat = AC_SRC_ALPHA;
+
+	AlphaBlend(ImageDC, // 여기에 그려라.
+		_CopyCenterPos.ix() - _CopySize.hix(), // 여기를 시작으로
+		_CopyCenterPos.iy() - _CopySize.hiy(),
+		_CopySize.ix(), // 이 크기로
+		_CopySize.iy(),
+		_OtherImage->GetImageDC(),
+		_OtherImagePos.ix(),// 이미지의 x y에서부터
+		_OtherImagePos.iy(),
+		_OtherImageSize.ix(), // 이미지의 x y까지의 위치를
+		_OtherImageSize.iy(),
+		BF);
+}
+
+
 
 void GameEngineImage::Cut(int _X, int _Y)
 {

@@ -167,10 +167,10 @@ private:
 	void ActorStart(GameEngineActor* _Actor, int _Order);
 
 	std::map<int, std::list<GameEngineRender*>> Renders;
-	void PushRender(GameEngineRender* _Render);
+	void PushRender(GameEngineRender* _Render, int _ChangeOrder);
 
 	std::map<int, std::list<GameEngineCollision*>> Collisions;
-	void PushCollision(GameEngineCollision* _Collision);
+	void PushCollision(GameEngineCollision* _Collision, int _ChangeOrder);
 
 	// 엔진수준의 기능이기 때문에 private으로 둔다.
 	void Release();

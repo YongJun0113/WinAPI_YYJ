@@ -1,4 +1,5 @@
 #include "GameEngineRender.h"
+#include "GameEngineCore.h"
 #include <GameEngineCore/GameEngineResources.h>
 #include <GameEngineBase/GameEngineString.h>
 #include "GameEngineActor.h"
@@ -16,6 +17,12 @@ GameEngineRender::~GameEngineRender()
 void GameEngineRender::SetImage(const std::string_view& _ImageName) 
 {
 	Image = GameEngineResources::GetInst().ImageFind(_ImageName);
+	// SetScaleToImage();
+}
+
+void GameEngineRender::SetImageToScaleToImage(const std::string_view& _ImageName)
+{
+	Image = GameEngineResources::GetInst().ImageFind(_ImageName);
 	SetScaleToImage();
 }
 
@@ -31,8 +38,7 @@ void GameEngineRender::SetScaleToImage()
 
 void GameEngineRender::SetOrder(int _Order) 
 {
-	GameEngineObject::SetOrder(_Order);
-	GetActor()->GetLevel()->PushRender(this);
+	GetActor()->GetLevel()->PushRender(this, _Order);
 }
 
 void GameEngineRender::SetFrame(int _Frame)
@@ -80,13 +86,103 @@ void GameEngineRender::FrameAnimation::Render(float _DeltaTime)
 			}
 		}
 
-		CurrentTime = FrameTime[CurrentIndex];
+		// 정밀하게 하려면 이게 맞죠?
+		CurrentTime += FrameTime[CurrentIndex];
 	}
+}
+
+void GameEngineRender::SetText(const std::string_view& _Text, const int _TextHeight, const std::string_view& _TextType, const TextAlign _TextAlign, const COLORREF _TextColor, float4 _TextBoxScale)
+{
+	RenderText = _Text;
+	TextHeight = _TextHeight;
+	TextType = _TextType;
+	Align = _TextAlign;
+	TextColor = _TextColor;
+	TextBoxScale = _TextBoxScale;
 }
 
 void GameEngineRender::Render(float _DeltaTime)
 {
+	if (RenderText != "")
+	{
+		TextRender(_DeltaTime);
+	}
+	else 
+	{
+		ImageRender(_DeltaTime);
+	}
+}
 
+void GameEngineRender::TextRender(float _DeltaTime)
+{
+
+	float4 CameraPos = float4::Zero;
+
+	if (true == IsEffectCamera)
+	{
+		CameraPos = GetActor()->GetLevel()->GetCameraPos();
+	}
+
+	float4 RenderPos = GetActorPlusPos() - CameraPos;
+
+	HDC hdc = GameEngineWindow::GetDoubleBufferImage()->GetImageDC();
+	HFONT hFont, OldFont;
+	LOGFONTA lf;
+	lf.lfHeight = TextHeight;
+	lf.lfWidth = 0;
+	lf.lfEscapement = 0;
+	lf.lfOrientation = 0;
+	lf.lfWeight = 0;
+	lf.lfItalic = 0;
+	lf.lfUnderline = 0;
+	lf.lfStrikeOut = 0;
+	lf.lfCharSet = HANGEUL_CHARSET;
+	lf.lfOutPrecision = 0;
+	lf.lfClipPrecision = 0;
+	lf.lfQuality = 0;
+	lf.lfPitchAndFamily = VARIABLE_PITCH | FF_ROMAN;
+	lstrcpy(lf.lfFaceName, TEXT(TextType.c_str()));
+	hFont = CreateFontIndirect(&lf);
+	OldFont = static_cast<HFONT>(SelectObject(hdc, hFont));
+
+	//SetTextAlign(hdc, static_cast<UINT>(Align));
+	SetTextColor(hdc, TextColor);
+	SetBkMode(hdc, TRANSPARENT);
+
+	RECT Rect;
+	Rect.left = RenderPos.ix();
+	Rect.top = RenderPos.iy();
+	Rect.right = RenderPos.ix() + TextBoxScale.ix();
+	Rect.bottom = RenderPos.iy() + TextBoxScale.iy();
+
+	if (GameEngineCore::GetInst()->IsDebug())
+	{
+		HDC DoubleDC = GameEngineWindow::GetDoubleBufferImage()->GetImageDC();
+		HBRUSH myBrush = static_cast<HBRUSH>(GetStockObject(NULL_BRUSH));
+		HBRUSH oldBrush = static_cast<HBRUSH>(SelectObject(DoubleDC, myBrush));
+		HPEN myPen = CreatePen(PS_DASH, 0, RGB(0, 0, 0));
+		HPEN oldPen = static_cast<HPEN>(SelectObject(DoubleDC, myPen));
+		Rectangle(GameEngineWindow::GetDoubleBufferImage()->GetImageDC(), Rect.left, Rect.top, Rect.right, Rect.bottom);
+
+		SelectObject(DoubleDC, oldBrush);
+		DeleteObject(myBrush);
+		SelectObject(DoubleDC, oldPen);
+		DeleteObject(myPen);
+	}
+
+	DrawTextA(GameEngineWindow::GetDoubleBufferImage()->GetImageDC(), RenderText.c_str(), static_cast<int>(RenderText.size()), &Rect, static_cast<UINT>(Align));
+
+
+	// TextOutA(GameEngineWindow::GetDoubleBufferImage()->GetImageDC(), RenderPos.ix(), RenderPos.iy(), RenderText.c_str(), static_cast<int>(RenderText.size()));
+
+	SelectObject(hdc, OldFont);
+	DeleteObject(hFont);
+
+	return;
+}
+
+void GameEngineRender::ImageRender(float _DeltaTime)
+{
 	if (nullptr != CurrentAnimation)
 	{
 		CurrentAnimation->Render(_DeltaTime);
@@ -110,11 +206,25 @@ void GameEngineRender::Render(float _DeltaTime)
 
 	if (true == Image->IsImageCutting())
 	{
-		GameEngineWindow::GetDoubleBufferImage()->TransCopy(Image, Frame, RenderPos, GetScale(), TransColor);
+		if (255 == Alpha)
+		{
+			GameEngineWindow::GetDoubleBufferImage()->TransCopy(Image, Frame, RenderPos, GetScale(), TransColor);
+		}
+		else if (255 > Alpha)
+		{
+			GameEngineWindow::GetDoubleBufferImage()->AlphaCopy(Image, Frame, RenderPos, GetScale(), Alpha);
+		}
 	}
-	else 
+	else
 	{
-		GameEngineWindow::GetDoubleBufferImage()->TransCopy(Image, RenderPos, GetScale(), {0, 0}, Image->GetImageScale(), TransColor);
+		if (255 == Alpha)
+		{
+			GameEngineWindow::GetDoubleBufferImage()->TransCopy(Image, RenderPos, GetScale(), { 0, 0 }, Image->GetImageScale(), TransColor);
+		}
+		else if (255 > Alpha)
+		{
+			GameEngineWindow::GetDoubleBufferImage()->AlphaCopy(Image, RenderPos, GetScale(), { 0, 0 }, Image->GetImageScale(), Alpha);
+		}
 	}
 }
 

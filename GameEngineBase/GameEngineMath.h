@@ -12,8 +12,8 @@
 class GameEngineMath final
 {
 public:
-	static std::vector<unsigned int> GetDigits(unsigned int _Value);
-	static unsigned int GetLenth(unsigned int _Value);
+	static std::vector<unsigned int> GetDigits(int _Value);
+	static unsigned int GetLenth(int _Value);
 	static const float PIE;
 	static const float PIE2;
 
@@ -177,6 +177,14 @@ public:
 		return Return;
 	}
 
+	float4 operator *(const float4 _Value) const
+	{
+		float4 Return;
+		Return.x = x * _Value.x;
+		Return.y = y * _Value.y;
+		Return.z = z * _Value.z;
+		return Return;
+	}
 
 	float4 operator /(const float4 _Value) const
 	{

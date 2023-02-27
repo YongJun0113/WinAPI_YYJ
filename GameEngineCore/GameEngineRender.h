@@ -4,6 +4,13 @@
 #include "GameEngineComponent.h"
 // 랜더링에 관련된 기능을 모두 집약한다.
 
+enum class TextAlign
+{
+	Left = DT_LEFT,
+	Right = DT_RIGHT,
+	Center = DT_CENTER
+};
+
 class FrameAnimationParameter
 {
 public:
@@ -38,12 +45,6 @@ public:
 	GameEngineRender& operator=(const GameEngineRender& _Other) = delete;
 	GameEngineRender& operator=(GameEngineRender&& _Other) noexcept = delete;
 
-	void SetImage(const std::string_view& _ImageName);
-
-	void SetScaleToImage();
-
-	void SetFrame(int _Frame);
-
 	inline GameEngineImage* GetImage()
 	{
 		return Image;
@@ -54,21 +55,58 @@ public:
 		return Frame;
 	}
 
-	void SetTransColor(int _Color) 
+	inline void SetTransColor(int _Color)
 	{
 		TransColor = _Color;
 	}
 
+	inline void SetEffectCamera(bool _Effect)
+	{
+		IsEffectCamera = _Effect;
+	}
+
 	inline void EffectCameraOff()
 	{
-		IsEffectCamera = false;
+		SetEffectCamera(false);
 	}
+
+	inline void EffectCameraOn()
+	{
+		SetEffectCamera(true);
+	}
+
+	inline int GetTextHeight()
+	{
+		return TextHeight;
+	}
+
+	inline void SetAlpha(int _Alpha)
+	{
+		Alpha = _Alpha;
+	}
+
+	inline void SetTextBoxScale(float4 _TextBoxScale)
+	{
+		TextBoxScale = _TextBoxScale;
+	}
+
+
+	void SetImage(const std::string_view& _ImageName);
+
+	void SetImageToScaleToImage(const std::string_view& _ImageName);
+
+	void SetScaleToImage();
+
+	void SetFrame(int _Frame);
 
 	bool IsAnimationEnd();
 	void CreateAnimation(const FrameAnimationParameter& _Paramter);
 	void ChangeAnimation(const std::string_view& _AnimationName, bool _ForceChange = false);
 
 	void SetOrder(int _Order) override;
+
+
+	void SetText(const std::string_view& _Text, const int _TextHeight = 20, const std::string_view& _TextType = "굴림", const TextAlign _TextAlign = TextAlign::Center, const COLORREF _TextColor = RGB(0, 0, 0), float4 TextBoxScale = float4::Zero);
 
 protected:
 
@@ -80,7 +118,12 @@ private:
 
 	int Frame = 0;
 
+	int Alpha = 255;
+
 	void Render(float _DeltaTime);
+
+	void TextRender(float _DeltaTime);
+	void ImageRender(float _DeltaTime);
 
 	class FrameAnimation
 	{
@@ -108,5 +151,17 @@ private:
 
 	std::map<std::string, FrameAnimation> Animation;
 	FrameAnimation* CurrentAnimation = nullptr;
+
+	/// <summary>
+	/// TextRender
+	/// </summary>
+	std::string RenderText = std::string();
+	int TextHeight = 0;
+	std::string TextType = std::string();
+	TextAlign Align = TextAlign::Left;
+	COLORREF TextColor = RGB(0, 0, 0);
+	float4 TextBoxScale;
+	// 그런걸 하면 HBRUSH 만드는데 사용하고 나면 Release
+	// GameEngineImage를 참조해라.
 };
 
